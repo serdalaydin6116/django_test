@@ -2,6 +2,7 @@ from selenium import webdriver
 from django.test import TestCase
 from .forms import HashForm
 import hashlib
+from .models import Hash
 
 # browser=webdriver.Chrome()
 # browser.get('http://localhost:8000')
@@ -33,13 +34,41 @@ class UnitTestCase(TestCase):
          response = self.client.get('/')
          self.assertTemplateUsed(response, 'hashing/home.html')
         #  The test ```client``` is a Python class that acts as a dummy web browser and allowing you to test your views
+    
+    
     def test_hash_form(self):
         form = HashForm(data={'text': 'hello'})
         # Check if it is valid
         self.assertTrue(form.is_valid())
 
+    
+    
     def test_hash_func_works(self):
         # Need to import haslib library to generate hash
         text_hash = hashlib.sha256('hello'.encode('utf-8')).hexdigest()
         self.assertEqual('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', text_hash)
         
+
+    def test_hash_object(self):
+        # First create a hash object:
+        hash = Hash() 
+        hash.text = 'hello'
+        hash.hash = '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+        # save new test properties to the db
+        hash.save()
+        pulled_hash = Hash.objects.get(hash='2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')
+        self.assertEqual(hash.text,pulled_hash.text)
+
+
+    def test_viewing_hash(self):
+        # Inherit from Hash form:
+        hash = Hash()
+        # sample text will be 'hello' as always:
+        hash.text = 'hello'
+        # sample hash is the same as always
+        hash.hash = '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+        # save to the test db
+        hash.save()
+        # the url pattern should be as fallows, hash/<hash value>
+        response = self.client.get('/hash/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')
+        self.assertContains(response,'hello')
